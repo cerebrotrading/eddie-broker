@@ -1,64 +1,48 @@
-# app.py
+# utils/noticias.py
 
-import streamlit as st
-from streamlit_autorefresh import st_autorefresh
-from datetime import datetime
-from utils.horario import es_dia_operativo, obtener_hora_colombia
-from utils.activos import selector_activo
-from utils.taxi import generar_estrategia_taxi
-from utils.noticias import obtener_noticias, generar_resumen_noticias
+import os
+import requests
+from datetime import datetime, timedelta
 
-# Configuración de página
-st.set_page_config(layout="wide")
-st.title("🤖 Eddie Broker – Estrategia TAXI")
+# API Key de Finnhub configurada en variables de entorno de Render
+FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY")
 
-# Auto-refresco para hora en tiempo real
-st_autorefresh(interval=5000, key="hora_refresh")
 
-# Mostrar hora Colombia
-hora_actual_dt = obtener_hora_colombia()
-hora_actual = hora_actual_dt.strftime('%H:%M:%S')
-st.markdown(f"🕒 Hora Colombia actual: **{hora_actual}**")
+def obtener_noticias(activo, limite=5):
+    """
+    Trae las últimas noticias de Finnhub para el símbolo dado.
+    """
+    hoy = datetime.now().date()
+    hace_3_dias = hoy - timedelta(days=3)
 
-# Verificación día operativo
-if es_dia_operativo():
-    st.success("📈 Hoy es un día operativo (COL + NYSE).")
-else:
-    st.warning("🧪 Hoy no es un día operativo. Eddie está en modo simulación.")
+    url = "https://finnhub.io/api/v1/company-news"
+    params = {
+        "symbol": activo.upper(),
+        "from": hace_3_dias.isoformat(),
+        "to": hoy.isoformat(),
+        "token": FINNHUB_API_KEY
+    }
+    try:
+        resp = requests.get(url, params=params)
+        if resp.status_code != 200:
+            return []
+        data = resp.json()
+        return data[:limite]
+    except Exception:
+        return []
 
-# Selección de dos activos
-st.subheader("🎯 Selección de activos")
-col1, col2 = st.columns(2)
-with col1:
-    activo1 = selector_activo(label="Activo 1")
-with col2:
-    activo2 = selector_activo(label="Activo 2")
 
-# Función para procesar cada activo
-def procesar_activo(activo):
-    st.markdown(f"---\n## 📈 {activo} - Gráfico")
-    # El selector ya mostró el gráfico; si no, llamar de nuevo
-    # Noticias
-    st.markdown(f"## 📰 Noticias de {activo}")
-    noticias = obtener_noticias(activo)
-    if noticias:
-        for n in noticias:
-            st.markdown(f"**🗞️ {n.get('headline','')}**\n\n{n.get('summary','')}\n\n[🔗 Ver más]({n.get('url','#')})\n")
-    else:
-        st.info(f"No hay noticias recientes para {activo}.")
-    # Resumen
-    st.markdown(f"## 🧠 Resumen contextual de {activo}")
-    resumen = generar_resumen_noticias(noticias)
-    st.success(resumen)
-    # Estrategia TAXI si está en horario
-    if "10:59:00" <= hora_actual <= "11:05:00":
-        st.markdown(f"## 🚕 Estrategia TAXI para {activo}")
-        estr = generar_estrategia_taxi(activo)
-        st.markdown(f"**Precio de entrada:** ${estr['precio_entrada']}  |  **SL:** ${estr['stop_loss']}  |  **TP1:** ${estr['take_profit_1']}  |  **TP2:** ${estr['take_profit_2']}")
-    else:
-        st.warning(f"⏰ Fuera de horario TAXI para {activo}.")
+def generar_resumen_noticias(noticias):
+    """
+    Genera un resumen simple de las noticias (sin IA), concatenando titulares y resúmenes.
+    """
+    if not noticias:
+        return "No hay noticias para mostrar."
+    líneas = []
+    for n in noticias:
+        título = n.get("headline", "")
+        resumen = n.get("summary", "")
+        líneas.append(f"• {título} – {resumen}")
+    return "\n".join(líneas)
 
-# Procesar ambos activos
-procesar_activo(activo1)
-procesar_activo(activo2)
 
