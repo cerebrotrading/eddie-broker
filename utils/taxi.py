@@ -38,6 +38,26 @@ def mostrar_estrategia_taxi(activo):
     if st.button("📅 Confirmar entrada oficial"):
         st.success("🎉 Estrategia TAXI confirmada. Orden generada y registrada (simulada).")
 
+        st.markdown("---")
+        st.markdown("### 📦 Estructura de la Orden en IB")
+        st.markdown("""
+        - **Tipo de orden:** LIMIT  
+        - **Tiempo de vigencia:** Day  
+        - **Bracket Order:** ✅ Activado  
+
+        **Take Profit:**
+        - Precio límite TP1: ${:.2f}  
+        - Precio límite TP2: ${:.2f}  
+        - Tiempo vigencia TP: Day  
+
+        **Stop Loss:**
+        - Precio límite SL: ${:.2f}  
+        - Tiempo vigencia SL: Day  
+
+        - **HNR (fuera horario regular):** ❌ No  
+        - **HNB (fuera horario bolsa):** ❌ No
+        """.format(tp1, tp2, stop_loss))
+
 def modo_simulacion():
     st.markdown("### 🎮 Modo Simulación Activado")
     st.info("Hoy no es día operativo. Puedes usar este modo para practicar sin riesgo.")
