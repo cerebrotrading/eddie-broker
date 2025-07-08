@@ -3,3 +3,6 @@ pandas
 pytz
 workalendar
 streamlit-autorefresh
+pandas
+pandas-ta
+requests
