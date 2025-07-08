@@ -1,19 +1,27 @@
 # app.py
 
 import streamlit as st
-from utils.horario import mostrar_hora_colombia, es_dia_operativo
+from utils.horario import es_dia_operativo, obtener_hora_colombia
+from utils.activos import selector_activo
+from utils.taxi import mostrar_estrategia_taxi, modo_simulacion
 
-# Configuración general
-st.set_page_config(page_title="Eddie Broker", layout="centered")
+# Configuración inicial
+st.set_page_config(page_title="Eddie Broker – TAXI", layout="centered")
+
+# Título principal
 st.title("🤖 Eddie Broker – Estrategia TAXI")
 
-# Paso 1: Mostrar hora
-mostrar_hora_colombia()
+# Hora actual en Colombia
+hora_actual = obtener_hora_colombia()
+st.markdown(f"🕒 Hora Colombia actual: **{hora_actual}**")
 
-# Paso 2: Validar día operativo
+# Evaluación del día operativo
 if es_dia_operativo():
     st.success("📈 Hoy es un día operativo (COL + NYSE).")
-    st.markdown("> Aún no se ha cargado el selector de activos ni estrategia.")
+    
+    # Selección de activo y ejecución de estrategia
+    activo = selector_activo()
+    mostrar_estrategia_taxi(activo)
 else:
-    st.warning("⛔ Hoy no es día operativo (COL o NYSE cerrado).")
-    st.markdown("> Activado modo simulación (aún no implementado).")
+    st.warning("🚫 Hoy NO es un día operativo (ni COL ni NYSE).")
+    modo_simulacion()
