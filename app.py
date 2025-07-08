@@ -31,7 +31,7 @@ if es_dia_operativo():
     st.success("📈 Hoy es un día operativo (COL + NYSE).")
 
     # 🎯 Activo
-    st.subheader("🎯 Selección de activo")
+  
     activo = selector_activo()
 
     # 📈 Gráfico (pantalla completa)
