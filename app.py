@@ -1,18 +1,21 @@
 # app.py
 
 import streamlit as st
-import time
+from streamlit_autorefresh import st_autorefresh
 from utils.horario import es_dia_operativo, obtener_hora_colombia
 from utils.activos import selector_activo
 from utils.noticias import obtener_noticias, generar_resumen_noticias
-# Si más adelante agregas indicadores reales:
 # from utils.indicadores import calcular_rsi, calcular_atr, calcular_momentum, validar_indicadores, obtener_backtesting
 
 st.set_page_config(layout="wide")
 st.title("🤖 Eddie Broker – Estrategia TAXI")
 
+# Refrescar automáticamente cada 5 segundos
+st_autorefresh(interval=5000, key="hora_refresh")
+
 # Mostrar hora en tiempo real
-placeholder_hora = st.empty()
+hora_actual = obtener_hora_colombia().strftime('%H:%M:%S')
+st.markdown(f"🕒 Hora Colombia actual: {hora_actual}")
 
 # Validación de día operativo
 operativo = es_dia_operativo()
@@ -25,7 +28,6 @@ else:
 activo = selector_activo()
 
 # Mostrar estrategia solo en horario permitido
-hora_actual = obtener_hora_colombia().strftime("%H:%M:%S")
 if "10:59:00" <= hora_actual <= "11:05:00":
     st.subheader("🚕 Estrategia TAXI C.O.D.E v1.7.6")
 
@@ -74,26 +76,7 @@ if noticias:
 else:
     st.info("No se encontraron noticias recientes para este activo.")
 
-# Resumen textual simple (sin OpenAI)
+# Resumen textual simple (sin OpenAI si no hay clave válida)
 st.markdown("## 🧠 Resumen contextual de las noticias")
 resumen = generar_resumen_noticias(noticias)
 st.success(resumen)
-
-# Hora en tiempo real (simulada en loop corto)
-import datetime
-
-def actualizar_hora():
-    with placeholder_hora.container():
-        while True:
-            hora_col = obtener_hora_colombia().strftime('%H:%M:%S')
-            st.markdown(f"🕒 Hora Colombia actual: {hora_col}")
-            time.sleep(1)
-
-# Ejecutar reloj en segundo plano solo si estás en local (Render puede bloquear loops infinitos)
-if st.runtime.exists():
-    st.stop()  # Evita bloquear el render
-
-# Para local: descomenta esto
-# actualizar_hora()
-
-
