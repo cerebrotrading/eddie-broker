@@ -36,11 +36,15 @@ with col2:
     activo2 = st.selectbox("Selecciona Activo 2:", activos, key="activo2")
     mostrar_grafico_tradingview(activo2)
 
-# Función para procesar cada activo
+# Inicializar estados de simulación
+if 'sim1' not in st.session_state:
+    st.session_state['sim1'] = False
+if 'sim2' not in st.session_state:
+    st.session_state['sim2'] = False
 
-def procesar_activo(activo):
+# Función para procesar cada activo
+def procesar_activo(activo, idx):
     st.markdown("---")
-    # Noticias
     st.subheader(f"📰 Noticias de {activo}")
     noticias = obtener_noticias(activo)
     if noticias:
@@ -49,13 +53,13 @@ def procesar_activo(activo):
     else:
         st.info(f"No hay noticias recientes para {activo}.")
 
-    # Resumen textual simple
     st.subheader(f"🧠 Resumen de noticias de {activo}")
     resumen = generar_resumen_noticias(noticias)
     st.success(resumen)
 
-    # Estrategia TAXI o simulación
+    # Estrategia TAXI
     in_horario = "10:59:00" <= hora_actual <= "11:05:00"
+    sim_key = f"sim{idx}"
     if in_horario:
         st.subheader(f"🚕 Estrategia TAXI para {activo}")
         estr = generar_estrategia_taxi(activo)
@@ -70,11 +74,19 @@ def procesar_activo(activo):
         ✅ Backtesting media 75%
         """)
     else:
-        # Botón para simulación/práctica
         st.warning(f"⏰ Fuera de horario TAXI para {activo}.")
-        if st.button(f"🔄 Simular estrategia TAXI para {activo}", key=f"sim_{activo}"):
-            st.info(f"Modo simulación TAXI activado para {activo}.")
+        # Botones para simulación
+        if not st.session_state[sim_key]:
+            if st.button(f"🔄 Iniciar simulación TAXI para {activo}", key=sim_key+"_start"):
+                st.session_state[sim_key] = True
+        else:
+            if st.button(f"⏹️ Detener simulación TAXI para {activo}", key=sim_key+"_stop"):
+                st.session_state[sim_key] = False
+
+        # Mostrar simulación si está activo
+        if st.session_state[sim_key]:
             estr = generar_estrategia_taxi(activo)
+            st.info(f"Modo simulación activo para {activo}")
             st.markdown(f"**[Demo] Precio de entrada:** ${estr['precio_entrada']}  |  **SL:** ${estr['stop_loss']}  |  **TP1:** ${estr['take_profit_1']}  |  **TP2:** ${estr['take_profit_2']}")
             st.markdown("""
             ## 📊 VALIDACIÓN TÉCNICA (Demo)
@@ -87,5 +99,6 @@ def procesar_activo(activo):
             """)
 
 # Procesar ambos activos
-procesar_activo(activo1)
-procesar_activo(activo2)
+procesar_activo(activo1, 1)
+procesar_activo(activo2, 2)
+
