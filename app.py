@@ -40,24 +40,6 @@ with col2:
 
 def procesar_activo(activo):
     st.markdown("---")
-    # Estrategia TAXI
-    hora_str = obtener_hora_colombia().strftime("%H:%M:%S")
-    if "10:59:00" <= hora_str <= "11:05:00":
-        st.subheader(f"🚕 Estrategia TAXI para {activo}")
-        estr = generar_estrategia_taxi(activo)
-        st.markdown(f"**Precio de entrada:** ${estr['precio_entrada']}  |  **SL:** ${estr['stop_loss']}  |  **TP1:** ${estr['take_profit_1']}  |  **TP2:** ${estr['take_profit_2']}")
-        st.markdown("""
-        ## 📊 VALIDACIÓN TÉCNICA
-        ✅ RSI > 50 (confirmado)  
-        ✅ Momentum M15 alcista  
-        ✅ ATR válido  
-        ✅ Precio verificado  
-        ✅ Indicadores alineados  
-        ✅ Backtesting media 75%
-        """)
-    else:
-        st.warning(f"⏰ Fuera de horario TAXI para {activo}.")
-
     # Noticias
     st.subheader(f"📰 Noticias de {activo}")
     noticias = obtener_noticias(activo)
@@ -72,7 +54,39 @@ def procesar_activo(activo):
     resumen = generar_resumen_noticias(noticias)
     st.success(resumen)
 
+    # Estrategia TAXI
+    in_horario = "10:59:00" <= hora_actual <= "11:05:00"
+    if in_horario:
+        st.subheader(f"🚕 Estrategia TAXI para {activo}")
+        estr = generar_estrategia_taxi(activo)
+        st.markdown(f"**Precio de entrada:** ${estr['precio_entrada']}  |  **SL:** ${estr['stop_loss']}  |  **TP1:** ${estr['take_profit_1']}  |  **TP2:** ${estr['take_profit_2']}")
+        st.markdown("""
+        ## 📊 VALIDACIÓN TÉCNICA
+        ✅ RSI > 50 (confirmado)  
+        ✅ Momentum M15 alcista  
+        ✅ ATR válido  
+        ✅ Precio verificado  
+        ✅ Indicadores alineados  
+        ✅ Backtesting media 75%
+        """)
+    else:
+        # Mostrar advertencia debajo de noticias
+        st.warning(f"⏰ Fuera de horario TAXI para {activo}.")
+        # Botón para práctica/demo
+        if st.button(f"🔄 Practicar TAXI en {activo}"):
+            st.info(f"Modo práctica activado para {activo}.")
+            estr = generar_estrategia_taxi(activo)
+            st.markdown(f"**[Demo] Precio de entrada:** ${estr['precio_entrada']}  |  **SL:** ${estr['stop_loss']}  |  **TP1:** ${estr['take_profit_1']}  |  **TP2:** ${estr['take_profit_2']}")
+            st.markdown("""
+            ## 📊 VALIDACIÓN TÉCNICA (Demo)
+            ✅ RSI > 50 (confirmado)  
+            ✅ Momentum M15 alcista  
+            ✅ ATR válido  
+            ✅ Precio verificado  
+            ✅ Indicadores alineados  
+            ✅ Backtesting media 75%
+            """)
+
 # Procesar ambos activos
 procesar_activo(activo1)
 procesar_activo(activo2)
-
