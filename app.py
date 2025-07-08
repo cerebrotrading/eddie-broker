@@ -72,10 +72,15 @@ def render_activo_block(activo, idx, column):
             nc1,nc2=st.columns(2)
             with nc1:
                 for n in n1:
-                    st.markdown(f"**🗞️ {n['headline']}**  
+            st.markdown(f"""**🗞️ {n['headline']}**  
 {n['summary']}  
-[🔗 Ver más]({n['url']})  ")
-            with nc2:
+[🔗 Ver más]({n['url']})""", unsafe_allow_html=True)
+        with nc2:
+            for n in n2:
+                st.markdown(f"""**🗞️ {n['headline']}**  
+{n['summary']}  
+[🔗 Ver más]({n['url']})""", unsafe_allow_html=True)
+        else:
                 for n in n2:
                     st.markdown(f"**🗞️ {n['headline']}**  
 {n['summary']}  
