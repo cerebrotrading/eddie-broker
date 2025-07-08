@@ -45,6 +45,7 @@ if 'sim2' not in st.session_state:
 # Función para procesar cada activo
 def procesar_activo(activo, idx):
     st.markdown("---")
+    # Noticias
     st.subheader(f"📰 Noticias de {activo}")
     noticias = obtener_noticias(activo)
     if noticias:
@@ -53,15 +54,29 @@ def procesar_activo(activo, idx):
     else:
         st.info(f"No hay noticias recientes para {activo}.")
 
+    # Resumen de noticias
     st.subheader(f"🧠 Resumen de noticias de {activo}")
     resumen = generar_resumen_noticias(noticias)
     st.success(resumen)
 
-    # Estrategia TAXI
+    # Fuera de horario o estrategia
     in_horario = "10:59:00" <= hora_actual <= "11:05:00"
     sim_key = f"sim{idx}"
-    if in_horario:
-        st.subheader(f"🚕 Estrategia TAXI para {activo}")
+
+    if not in_horario:
+        # Mostrar advertencia y botón de simulación debajo de noticias
+        st.warning(f"⏰ Fuera de horario TAXI para {activo}.")
+        if not st.session_state[sim_key]:
+            if st.button(f"🔄 Iniciar simulación TAXI para {activo}", key=sim_key+"_start"):
+                st.session_state[sim_key] = True
+        else:
+            if st.button(f"⏹️ Detener simulación TAXI para {activo}", key=sim_key+"_stop"):
+                st.session_state[sim_key] = False
+
+    # Mostrar estrategia en horario o en simulación
+    if in_horario or st.session_state[sim_key]:
+        mode = "(Demo)" if not in_horario else ""
+        st.subheader(f"🚕 Estrategia TAXI para {activo} {mode}")
         estr = generar_estrategia_taxi(activo)
         st.markdown(f"**Precio de entrada:** ${estr['precio_entrada']}  |  **SL:** ${estr['stop_loss']}  |  **TP1:** ${estr['take_profit_1']}  |  **TP2:** ${estr['take_profit_2']}")
         st.markdown("""
@@ -73,32 +88,9 @@ def procesar_activo(activo, idx):
         ✅ Indicadores alineados  
         ✅ Backtesting media 75%
         """)
-    else:
-        st.warning(f"⏰ Fuera de horario TAXI para {activo}.")
-        # Botones para simulación
-        if not st.session_state[sim_key]:
-            if st.button(f"🔄 Iniciar simulación TAXI para {activo}", key=sim_key+"_start"):
-                st.session_state[sim_key] = True
-        else:
-            if st.button(f"⏹️ Detener simulación TAXI para {activo}", key=sim_key+"_stop"):
-                st.session_state[sim_key] = False
-
-        # Mostrar simulación si está activo
-        if st.session_state[sim_key]:
-            estr = generar_estrategia_taxi(activo)
-            st.info(f"Modo simulación activo para {activo}")
-            st.markdown(f"**[Demo] Precio de entrada:** ${estr['precio_entrada']}  |  **SL:** ${estr['stop_loss']}  |  **TP1:** ${estr['take_profit_1']}  |  **TP2:** ${estr['take_profit_2']}")
-            st.markdown("""
-            ## 📊 VALIDACIÓN TÉCNICA (Demo)
-            ✅ RSI > 50 (confirmado)  
-            ✅ Momentum M15 alcista  
-            ✅ ATR válido  
-            ✅ Precio verificado  
-            ✅ Indicadores alineados  
-            ✅ Backtesting media 75%
-            """)
 
 # Procesar ambos activos
 procesar_activo(activo1, 1)
 procesar_activo(activo2, 2)
+
 
