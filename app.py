@@ -1,53 +1,66 @@
 # app.py
 
 import streamlit as st
-from streamlit_autorefresh import st_autorefresh
-from utils.horario import es_dia_operativo
-from utils.activos import selector_activo
-from utils.taxi import mostrar_estrategia_taxi, modo_simulacion
+import time
 from datetime import datetime
-import pytz
+from utils.horario import es_dia_operativo, obtener_hora_colombia
+from utils.taxi import mostrar_estrategia_taxi, modo_simulacion
+from utils.noticias import obtener_noticias
 
-# 🧩 Configuración visual
-st.set_page_config(
-    page_title="Eddie Broker – TAXI",
-    layout="wide",
-    page_icon="💀",
-)
-
-# 🔄 Auto-recarga cada 5 segundos para mantener la hora viva
-st_autorefresh(interval=5000, limit=None, key="auto_refresh")
-
-# 🧠 Encabezado principal
+st.set_page_config(page_title="Eddie Broker", layout="wide")
 st.title("🤖 Eddie Broker – Estrategia TAXI")
 
-# ⏰ Hora en tiempo real
-zona_col = pytz.timezone("America/Bogota")
-hora_actual = datetime.now(zona_col).strftime("%H:%M:%S")
-st.markdown(f"🕒 Hora Colombia actual: **{hora_actual}**")
+# Mostrar hora Colombia en tiempo real
+hora_placeholder = st.empty()
 
-# 📅 Día operativo
+hora_actual = obtener_hora_colombia().strftime("%H:%M:%S")
+hora_placeholder.markdown(f"🕒 **Hora Colombia actual:** `{hora_actual}`")
+
+# Día operativo
 if es_dia_operativo():
     st.success("📈 Hoy es un día operativo (COL + NYSE).")
-
-    # 🎯 Activo
-  
-    activo = selector_activo()
-
-    # 📈 Gráfico (pantalla completa)
-    st.components.v1.html(
-        f"""
-        <iframe src="https://s.tradingview.com/embed-widget/mini-symbol-overview/?symbol=NASDAQ:{activo}&interval=15&locale=es&theme=dark&height=400"
-                width="100%" height="400" frameborder="0" allowtransparency="true" scrolling="no"></iframe>
-        """,
-        height=420,
-    )
-
-    # 🚕 Estrategia TAXI (debajo del gráfico)
-    st.markdown("---")
-    mostrar_estrategia_taxi(activo)
-
 else:
-    st.warning("🚫 Hoy NO es un día operativo (ni COL ni NYSE).")
+    st.warning("📉 Hoy NO es un día operativo. Modo simulación activo.")
+
+# Selector de activos
+st.markdown("## 🎯 Selección de activo")
+lista_activos = ["TSLA", "META", "AAPL", "EC", "AMD", "BA", "MSFT", "NVDA", "GOOGL", "INTC", "PYPL", "XOM", "DIS", "CRM", "BABA"]
+activo_seleccionado = st.selectbox("Elige el activo para visualizar y aplicar la estrategia:", lista_activos)
+
+# Gráfico de TradingView
+st.markdown("---")
+st.markdown("## 📈 Gráfico del activo seleccionado")
+st.components.v1.html(f'''
+    <div style="height:500px">
+    <iframe
+      src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_{activo_seleccionado}&symbol=NASDAQ%3A{activo_seleccionado}&interval=15&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=[]&theme=dark&style=1&timezone=America%2FBogota&withdateranges=1&hideideas=1&hidelegend=0&enable_publishing=false"
+      width="100%" height="100%" frameborder="0" allowtransparency="true" scrolling="no">
+    </iframe>
+    </div>
+''', height=500)
+
+# Noticias recientes
+st.markdown("## 📰 Noticias recientes")
+noticias = obtener_noticias(activo_seleccionado)
+
+if noticias:
+    for noticia in noticias:
+        st.markdown(f"**🗞️ {noticia.get('headline', 'Sin título')}**")
+        st.markdown(f"{noticia.get('summary', '')}")
+        if 'url' in noticia:
+            st.markdown(f"[🔗 Ver más]({noticia['url']})")
+        st.markdown("---")
+else:
+    st.info("No hay noticias recientes disponibles para este activo.")
+
+# Estrategia
+hora_actual_obj = obtener_hora_colombia()
+if es_dia_operativo():
+    if hora_actual_obj.strftime("%H:%M") >= "10:59" and hora_actual_obj.strftime("%H:%M") <= "11:05":
+        mostrar_estrategia_taxi(activo_seleccionado)
+    else:
+        st.warning("🚫 Fuera del horario de entrada permitido (10:59 AM a 11:05 AM).")
+else:
     modo_simulacion()
+
 
