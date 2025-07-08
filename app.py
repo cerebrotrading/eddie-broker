@@ -21,22 +21,33 @@ st_autorefresh(interval=5000, limit=None, key="auto_refresh")
 # 🧠 Encabezado principal
 st.title("🤖 Eddie Broker – Estrategia TAXI")
 
-# ⏰ Hora en tiempo real (refrescada cada 5 segundos automáticamente)
+# ⏰ Hora en tiempo real
 zona_col = pytz.timezone("America/Bogota")
 hora_actual = datetime.now(zona_col).strftime("%H:%M:%S")
 st.markdown(f"🕒 Hora Colombia actual: **{hora_actual}**")
 
-# 📅 Verificación de día operativo (COL + NYSE)
+# 📅 Día operativo
 if es_dia_operativo():
     st.success("📈 Hoy es un día operativo (COL + NYSE).")
 
-    # 🎯 Selector + Estrategia
-    col1, col2 = st.columns([1, 2])
-    with col1:
-        activo = selector_activo()
-    with col2:
-        mostrar_estrategia_taxi(activo)
+    # 🎯 Activo
+    st.subheader("🎯 Selección de activo")
+    activo = selector_activo()
+
+    # 📈 Gráfico (pantalla completa)
+    st.components.v1.html(
+        f"""
+        <iframe src="https://s.tradingview.com/embed-widget/mini-symbol-overview/?symbol=NASDAQ:{activo}&interval=15&locale=es&theme=dark&height=400"
+                width="100%" height="400" frameborder="0" allowtransparency="true" scrolling="no"></iframe>
+        """,
+        height=420,
+    )
+
+    # 🚕 Estrategia TAXI (debajo del gráfico)
+    st.markdown("---")
+    mostrar_estrategia_taxi(activo)
 
 else:
     st.warning("🚫 Hoy NO es un día operativo (ni COL ni NYSE).")
     modo_simulacion()
+
