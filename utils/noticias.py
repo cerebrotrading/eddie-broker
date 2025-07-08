@@ -1,48 +1,38 @@
 # utils/noticias.py
 
-import os
-import requests
-from openai import OpenAI
+# Simulador simple de noticias por activo sin necesidad de API
 
-# API Key de OpenAI (asegúrate de haberla definido en Render como variable de entorno)
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-# Cliente OpenAI actualizado
-client = OpenAI(api_key=OPENAI_API_KEY)
-
-# API de noticias (puedes cambiarla si tienes otra fuente preferida)
 def obtener_noticias(activo):
-    try:
-        # Puedes usar una API como Finnhub o una ficticia de prueba aquí
-        # Este ejemplo usa datos mock por simplicidad
-        noticias_mock = {
-            "TSLA": [
-                {
-                    "headline": "Tesla Stock Bull Says 'Tesla Board Needs To Act Now'",
-                    "summary": "Tesla cayó en la bolsa y analistas piden intervención de la junta directiva.",
-                    "url": "https://example.com/tesla1"
-                },
-                {
-                    "headline": "Tesla robotaxi stumble is a win for Lyft",
-                    "summary": "El tropiezo de Tesla con su robotaxi impulsa a su competidor Lyft.",
-                    "url": "https://example.com/tesla2"
-                }
-            ],
-            "NVDA": [
-                {
-                    "headline": "Micron gana mercado tras retrasos de Nvidia",
-                    "summary": "Micron captura participación tras problemas de suministro de Nvidia.",
-                    "url": "https://example.com/nvda1"
-                }
-            ]
-        }
-        return noticias_mock.get(activo.upper(), [])
-    except Exception as e:
-        return []
+    noticias_mock = {
+        "TSLA": [
+            {
+                "headline": "Tesla cae tras decisiones políticas de Elon Musk",
+                "summary": "Analistas piden intervención de la junta directiva de Tesla tras recientes movimientos políticos del CEO.",
+                "url": "https://example.com/tsla1"
+            },
+            {
+                "headline": "Tesla retrasa su robotaxi, oportunidad para Lyft",
+                "summary": "El retraso en el lanzamiento del robotaxi de Tesla genera oportunidades de mercado para su competidor Lyft.",
+                "url": "https://example.com/tsla2"
+            }
+        ],
+        "NVDA": [
+            {
+                "headline": "Micron gana participación tras retrasos en Nvidia",
+                "summary": "Micron se posiciona mejor en el mercado de chips frente a Nvidia, según analistas.",
+                "url": "https://example.com/nvda1"
+            }
+        ]
+    }
 
-# Generar resumen con OpenAI (usando SDK 1.x)
+    return noticias_mock.get(activo.upper(), [])
+
 def generar_resumen_noticias(noticias):
     if not noticias:
-        return "No hay n
-
+        return "No hay noticias para mostrar."
+    
+    resumen = "Resumen automático:\n\n"
+    for n in noticias:
+        resumen += f"• {n['headline']} – {n['summary']}\n"
+    return resumen
 
