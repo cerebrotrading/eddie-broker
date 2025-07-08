@@ -1,54 +1,48 @@
 # utils/noticias.py
 
-import requests
 import os
-from datetime import datetime, timedelta
-import openai
+import requests
+from openai import OpenAI
 
-FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY")
+# API Key de OpenAI (asegúrate de haberla definido en Render como variable de entorno)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-openai.api_key = OPENAI_API_KEY
+# Cliente OpenAI actualizado
+client = OpenAI(api_key=OPENAI_API_KEY)
 
-def obtener_noticias(activo, limite=5):
-    hoy = datetime.now().date()
-    hace_3_dias = hoy - timedelta(days=3)
-
-    url = f"https://finnhub.io/api/v1/company-news"
-    params = {
-        "symbol": activo.upper(),
-        "from": hace_3_dias.isoformat(),
-        "to": hoy.isoformat(),
-        "token": FINNHUB_API_KEY
-    }
-
+# API de noticias (puedes cambiarla si tienes otra fuente preferida)
+def obtener_noticias(activo):
     try:
-        resp = requests.get(url, params=params)
-        data = resp.json()
-        return data[:limite]
-
-    except Exception as e:
-        return [{"headline": "No se pudieron cargar noticias", "summary": str(e)}]
-
-def generar_resumen_noticias(noticias):
-    if not noticias or not isinstance(noticias, list):
-        return "No hay suficientes noticias para generar un resumen."
-
-    contenido = "\n\n".join([
-        f"Titular: {n.get('headline', '')}\nResumen: {n.get('summary', '')}" for n in noticias
-    ])
-
-    try:
-        respuesta = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "Eres un analista financiero que resume noticias del mercado."},
-                {"role": "user", "content": f"Resume brevemente el contexto general de estas noticias sobre el activo:\n\n{contenido}"}
+        # Puedes usar una API como Finnhub o una ficticia de prueba aquí
+        # Este ejemplo usa datos mock por simplicidad
+        noticias_mock = {
+            "TSLA": [
+                {
+                    "headline": "Tesla Stock Bull Says 'Tesla Board Needs To Act Now'",
+                    "summary": "Tesla cayó en la bolsa y analistas piden intervención de la junta directiva.",
+                    "url": "https://example.com/tesla1"
+                },
+                {
+                    "headline": "Tesla robotaxi stumble is a win for Lyft",
+                    "summary": "El tropiezo de Tesla con su robotaxi impulsa a su competidor Lyft.",
+                    "url": "https://example.com/tesla2"
+                }
             ],
-            max_tokens=200
-        )
-        return respuesta.choices[0].message.content.strip()
-
+            "NVDA": [
+                {
+                    "headline": "Micron gana mercado tras retrasos de Nvidia",
+                    "summary": "Micron captura participación tras problemas de suministro de Nvidia.",
+                    "url": "https://example.com/nvda1"
+                }
+            ]
+        }
+        return noticias_mock.get(activo.upper(), [])
     except Exception as e:
-        return f"Error al generar resumen: {str(e)}"
+        return []
+
+# Generar resumen con OpenAI (usando SDK 1.x)
+def generar_resumen_noticias(noticias):
+    if not noticias:
+        return "No hay n
+
 
