@@ -3,7 +3,7 @@
 import streamlit as st
 import time
 from utils.horario import es_dia_operativo, obtener_hora_colombia
-from utils.activos import lista_activos
+from utils.activos import activos
 from utils.taxi import generar_estrategia_taxi
 from utils.indicadores import calcular_rsi, calcular_atr, calcular_momentum, validar_indicadores, obtener_backtesting
 from utils.noticias import obtener_noticias, generar_resumen_noticias
