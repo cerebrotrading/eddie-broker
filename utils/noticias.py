@@ -1,38 +1,43 @@
 # utils/noticias.py
 
-# Simulador simple de noticias por activo sin necesidad de API
+import os
+import requests
+from datetime import datetime, timedelta
 
-def obtener_noticias(activo):
-    noticias_mock = {
-        "TSLA": [
-            {
-                "headline": "Tesla cae tras decisiones políticas de Elon Musk",
-                "summary": "Analistas piden intervención de la junta directiva de Tesla tras recientes movimientos políticos del CEO.",
-                "url": "https://example.com/tsla1"
-            },
-            {
-                "headline": "Tesla retrasa su robotaxi, oportunidad para Lyft",
-                "summary": "El retraso en el lanzamiento del robotaxi de Tesla genera oportunidades de mercado para su competidor Lyft.",
-                "url": "https://example.com/tsla2"
-            }
-        ],
-        "NVDA": [
-            {
-                "headline": "Micron gana participación tras retrasos en Nvidia",
-                "summary": "Micron se posiciona mejor en el mercado de chips frente a Nvidia, según analistas.",
-                "url": "https://example.com/nvda1"
-            }
-        ]
+FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY")
+
+def obtener_noticias(activo, limite=5):
+    """
+    Trae las últimas noticias de Finnhub para el símbolo dado.
+    """
+    hoy = datetime.now().date()
+    hace_3_dias = hoy - timedelta(days=3)
+
+    url = "https://finnhub.io/api/v1/company-news"
+    params = {
+        "symbol": activo.upper(),
+        "from": hace_3_dias.isoformat(),
+        "to": hoy.isoformat(),
+        "token": FINNHUB_API_KEY
     }
+    resp = requests.get(url, params=params)
+    if resp.status_code != 200:
+        return []
 
-    return noticias_mock.get(activo.upper(), [])
+    data = resp.json()
+    # Los primeros `limite` artículos
+    return data[:limite]
 
 def generar_resumen_noticias(noticias):
+    """
+    Genera un resumen simple de las noticias (sin IA).
+    """
     if not noticias:
         return "No hay noticias para mostrar."
-    
-    resumen = "Resumen automático:\n\n"
+    líneas = []
     for n in noticias:
-        resumen += f"• {n['headline']} – {n['summary']}\n"
-    return resumen
+        título = n.get("headline", "")
+        resumen = n.get("summary", "")
+        líneas.append(f"• {título} – {resumen}")
+    return "\n".join(líneas)
 
