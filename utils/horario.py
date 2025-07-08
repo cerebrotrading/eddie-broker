@@ -1,26 +1,19 @@
 # utils/horario.py
 
 from datetime import datetime
-from workalendar.america import Colombia
-from pandas.tseries.holiday import USFederalHolidayCalendar
 import pytz
-import pandas as pd
-import streamlit as st
+from workalendar.america import Colombia
+from workalendar.usa import UnitedStates
 
-def mostrar_hora_colombia():
+def obtener_hora_colombia():
     zona_col = pytz.timezone("America/Bogota")
-    ahora = datetime.now(zona_col).strftime("%H:%M:%S")
-    st.markdown(f"🕒 **Hora Colombia actual:** `{ahora}`")
+    ahora = datetime.now(zona_col)
+    return ahora.strftime("%H:%M:%S")
 
 def es_dia_operativo():
+    hoy = datetime.now().date()
     cal_col = Colombia()
-    zona_col = pytz.timezone("America/Bogota")
-    hoy = datetime.now(zona_col).date()
-
-    cal_usa = USFederalHolidayCalendar()
-    feriados_usa = cal_usa.holidays(start=hoy, end=hoy + pd.Timedelta(days=1))
-
-    es_col = cal_col.is_working_day(hoy)
-    es_usa = hoy.weekday() < 5 and hoy not in feriados_usa
-
-    return es_col and es_usa
+    cal_usa = UnitedStates()
+    es_laboral_col = cal_col.is_working_day(hoy)
+    es_laboral_usa = cal_usa.is_working_day(hoy)
+    return es_laboral_col and es_laboral_usa
