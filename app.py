@@ -41,33 +41,57 @@ for i in (1, 2):
     if key not in st.session_state:
         st.session_state[key] = False
 
-# Función para tabla de estrategia
-capital_por_tp = 125.0  # USD
+# Función para tabla de estrategia ajustada
+def tabla_taxi(estr, order_type, spread):
+    # Montos fijos
+    importe_tp = 125.0  # USD por TP
 
-def tabla_taxi(estr):
     # Porcentajes de ejemplo
     sl_pct  = 25   / 250   # 10%
     tp1_pct = 31.25/ 250   # 12.5%
     tp2_pct = 37.5 / 250   # 15%
 
-    entry_price = estr['precio_entrada']
-    sl_price    = round(entry_price - capital_por_tp * sl_pct, 2)
-    tp1_price   = round(entry_price + capital_por_tp * tp1_pct, 2)
-    tp2_price   = round(entry_price + capital_por_tp * tp2_pct, 2)
-    unidades    = round(capital_por_tp / entry_price, 2)
+    # Precios base
+    base_price = estr['precio_entrada']
+    entry_price = round(base_price + spread, 2)
 
+    # Cálculo de SL y TP estimados
+    sl_price_raw  = entry_price - importe_tp * sl_pct
+    tp1_price_raw = entry_price + importe_tp * tp1_pct
+    tp2_price_raw = entry_price + importe_tp * tp2_pct
+
+    # Capping para riesgo no superior a importe_tp
+    if entry_price - sl_price_raw > importe_tp:
+        sl_price = round(entry_price - importe_tp, 2)
+    else:
+        sl_price = round(sl_price_raw, 2)
+    # Capping TP igualmente
+    if tp1_price_raw - entry_price > importe_tp:
+        tp1_price = round(entry_price + importe_tp, 2)
+    else:
+        tp1_price = round(tp1_price_raw, 2)
+    if tp2_price_raw - entry_price > importe_tp:
+        tp2_price = round(entry_price + importe_tp, 2)
+    else:
+        tp2_price = round(tp2_price_raw, 2)
+
+    # Unidades compradas
+    unidades = round(importe_tp / entry_price, 2)
+
+    # Generar tabla Markdown
     return f"""
-| Campo                  | Valor                     |
-| ---------------------- | ------------------------- |
-| 📈 Tipo de operación   | LONG                      |
-| 💵 Importe             | $ {capital_por_tp:.2f} USD |
-| 🎯 Entrada             | $ {capital_por_tp:.2f} USD |
-| ⛔ SL                  | $ {sl_price:.2f} USD       |
-| 🎯 TP1                 | $ {tp1_price:.2f} USD      |
-| 🎯 TP2                 | $ {tp2_price:.2f} USD      |
-| 📊 Unidades compradas  | {unidades}                |
-| 🧠 Osciladores         | RSI > 50, MACD+, volumen ↑ |
-| 🔍 Spread validado     | ✅                        |
+| Campo                | Valor                         |
+| -------------------- | ----------------------------- |
+| 📈 Tipo de operación | LONG                          |
+| ⚙️ Tipo de orden     | {order_type}                  |
+| 💵 Importe           | $ {importe_tp:.2f} USD         |
+| 🎯 Entrada           | $ {entry_price:.2f} USD        |
+| ⛔ SL                | $ {sl_price:.2f} USD           |
+| 🎯 TP1               | $ {tp1_price:.2f} USD          |
+| 🎯 TP2               | $ {tp2_price:.2f} USD          |
+| 📊 Unidades          | {unidades}                     |
+| 🧠 Osciladores       | RSI > 50, MACD+, volumen ↑     |
+| 🔍 Spread validado   | ✅                            |
 """
 
 # Generar cabecera oficial
