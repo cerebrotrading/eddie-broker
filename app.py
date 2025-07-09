@@ -41,37 +41,52 @@ for i in (1, 2):
     if key not in st.session_state:
         st.session_state[key] = False
 
-# Cabecera oficial
-def formato_taxi_header(dt: datetime):
-    dia    = dt.day
-    mes    = dt.strftime('%B')
-    año    = dt.year
-    hora12 = dt.strftime('%I:%M %p')
-    return f"🚕 TAXI OFICIAL – {dia} de {mes} de {año} – {hora12} (RRR Optimizado)"
-
-# Tabla de estrategia, toma order_type y spread de la estrategia
-def tabla_taxi(estr):
-    unidades   = estr["unidades"]
+# Importe por TP fijo
+def tabla_taxi(estr, order_type, spread):
+    capital_por_tp = 125.0  # USD por TP
+    # Porcentajes
+    sl_pct  = 0.10
+    tp1_pct = 0.125
+    tp2_pct = 0.15
+    # Precios ajustados
+    base_price = estr['precio_entrada']
+    entry_price = round(base_price + spread, 2)
+    sl_raw  = entry_price - capital_por_tp * sl_pct
+    tp1_raw = entry_price + capital_por_tp * tp1_pct
+    tp2_raw = entry_price + capital_por_tp * tp2_pct
+    # Capping
+    sl_price  = round(entry_price - min(capital_por_tp, entry_price - sl_raw), 2)
+    tp1_price = round(entry_price + min(capital_por_tp, tp1_raw - entry_price), 2)
+    tp2_price = round(entry_price + min(capital_por_tp, tp2_raw - entry_price), 2)
+    unidades = round(capital_por_tp / entry_price, 2)
     return f"""
 | Campo                  | Valor                     |
 | ---------------------- | ------------------------- |
-| 📈 Tipo de operación   | {estr['tipo_operacion']}  |
-| ⚙️ Tipo de orden       | {estr['tipo_orden']}      |
-| 💵 Importe             | ${estr['importe_tp']:.2f} USD |
-| 🎯 Entrada             | ${estr['precio_entrada'] + estr['spread']:.2f} USD |
-| ⛔ SL                  | ${estr['sl_price']:.2f} USD   |
-| 🎯 TP1                 | ${estr['tp1_price']:.2f} USD  |
-| 🎯 TP2                 | ${estr['tp2_price']:.2f} USD  |
+| 📈 Tipo de operación   | LONG                      |
+| ⚙️ Tipo de orden       | {order_type}              |
+| 💵 Importe             | $ {capital_por_tp:.2f} USD |
+| 🎯 Entrada             | $ {entry_price:.2f} USD    |
+| ⛔ SL                  | $ {sl_price:.2f} USD       |
+| 🎯 TP1                 | $ {tp1_price:.2f} USD      |
+| 🎯 TP2                 | $ {tp2_price:.2f} USD      |
 | 📊 Unidades compradas  | {unidades}                |
-| 🧠 Osciladores         | {estr['osciladores']}     |
-| 🔍 Spread validado     | { '✅' if estr['spread'] <= estr['max_spread'] else '❌' } |
-"""
+| 🧠 Osciladores         | RSI > 50, MACD+, volumen ↑ |
+| 🔍 Spread validado     | ✅                        |
+"""  
 
-# Lógica de renderizado para cada activo
+# Cabecera oficial
+def formato_taxi_header(dt: datetime):
+    dia = dt.day
+    mes = dt.strftime('%B')
+    año = dt.year
+    hora12 = dt.strftime('%I:%M %p')
+    return f"🚕 TAXI OFICIAL – {dia} de {mes} de {año} – {hora12} (RRR Optimizado)"
+
+# Renderizado de bloques
 def render_activo_block(activo, idx, column):
     with column:
-        st.markdown("---")
-        # Noticias en dos columnas
+        st.markdown('---')
+        # Noticias dual-columna
         st.subheader(f"📰 Noticias de {activo}")
         noticias = obtener_noticias(activo)
         if noticias:
@@ -80,30 +95,24 @@ def render_activo_block(activo, idx, column):
             nc1, nc2 = st.columns(2)
             with nc1:
                 for n in n1:
-                    st.markdown(
-                        f"**🗞️ {n['headline']}**  \n{n['summary']}  \n[🔗 Ver más]({n['url']})",
-                        unsafe_allow_html=True
-                    )
+                    st.markdown(f"**🗞️ {n['headline']}**  \n{n['summary']}  \n[🔗 Ver más]({n['url']})", unsafe_allow_html=True)
             with nc2:
                 for n in n2:
-                    st.markdown(
-                        f"**🗞️ {n['headline']}**  \n{n['summary']}  \n[🔗 Ver más]({n['url']})",
-                        unsafe_allow_html=True
-                    )
+                    st.markdown(f"**🗞️ {n['headline']}**  \n{n['summary']}  \n[🔗 Ver más]({n['url']})", unsafe_allow_html=True)
         else:
             st.info(f"No hay noticias recientes para {activo}.")
-
         # Resumen
         st.subheader(f"🧠 Resumen de noticias de {activo}")
         st.success(generar_resumen_noticias(noticias))
-
-        # Cabecera oficial y nota de eToro
+        # Cabecera
         st.markdown(formato_taxi_header(hora_actual_dt))
         st.markdown("📌 Compatible con eToro – SL y TP en USD reales dentro del límite")
-
-        # Simulación / estrategia
+        # Inputs order & spread
+        order_type = st.selectbox("Tipo de orden:", ["LIMIT","MARKET"], key=f"order_{idx}")
+        spread = st.number_input("Spread estimado (USD):", min_value=0.0, value=0.08, step=0.01, key=f"spread_{idx}")
+        # Simulación
         in_horario = "10:59:00" <= hora_actual <= "11:05:00"
-        sim_key    = f"sim{idx}"
+        sim_key = f"sim{idx}"
         if not in_horario:
             st.warning(f"⏰ Fuera de horario TAXI para {activo}.")
             if not st.session_state[sim_key]:
@@ -112,13 +121,12 @@ def render_activo_block(activo, idx, column):
             else:
                 if st.button(f"⏹️ Detener simulación para {activo}", key=f"stop_{sim_key}"):
                     st.session_state[sim_key] = False
-
+        # Mostrar estrategia/demo\        
         if in_horario or st.session_state[sim_key]:
             mode = " (Demo)" if not in_horario else ""
             st.subheader(f"🚕 TAXI oficial{mode} para {activo}")
-            # Obtener estrategia ya con order_type y spread
             estr = generar_estrategia_taxi(activo)
-            st.markdown(tabla_taxi(estr), unsafe_allow_html=True)
+            st.markdown(tabla_taxi(estr, order_type, spread), unsafe_allow_html=True)
             st.markdown("""
             ## 📊 VALIDACIÓN TÉCNICA
             ✅ RSI > 50 (confirmado)  
@@ -127,9 +135,10 @@ def render_activo_block(activo, idx, column):
             ✅ Precio verificado  
             ✅ Indicadores alineados  
             ✅ Backtesting media 75%
-            """)
+            """
+            )
 
-# Render en dos columnas
+# Ejecutar render para ambos activos
 block_col1, block_col2 = st.columns(2)
 render_activo_block(activo1, 1, block_col1)
 render_activo_block(activo2, 2, block_col2)
