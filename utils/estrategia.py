@@ -1,62 +1,53 @@
 # utils/estrategia.py
 
-import yfinance as yf
-import pandas as pd
-import ta
+import random
 
-def generar_estrategia_taxi(activo: str, capital_total: float = 250.0):
-    # 1. Descargar datos M15
-    df = yf.download(tickers=activo, interval="15m", period="2d")
-    if df.empty:
-        raise ValueError(f"No se pudo descargar datos para {activo}")
+# Simula una estrategia TAXI real o demo para un activo
 
-    df["RSI"] = ta.momentum.RSIIndicator(df["Close"]).rsi()
-    df["EMA8"] = ta.trend.EMAIndicator(df["Close"], window=8).ema_indicator()
-    df["EMA21"] = ta.trend.EMAIndicator(df["Close"], window=21).ema_indicator()
-    df["MACD"] = ta.trend.MACD(df["Close"]).macd()
-    df["ATR"] = ta.volatility.AverageTrueRange(high=df["High"], low=df["Low"], close=df["Close"]).average_true_range()
+def generar_estrategia_taxi(activo, modo_demo=False):
+    precio_base = round(random.uniform(100, 500), 2)
+    spread = round(random.uniform(0.02, 0.15), 2)
+    entrada = round(precio_base + spread, 2)
+    rrr_tp1 = 1.25
+    rrr_tp2 = 1.5
 
-    # 2. Último valor técnico
-    rsi = df["RSI"].iloc[-1]
-    ema8 = df["EMA8"].iloc[-1]
-    ema21 = df["EMA21"].iloc[-1]
-    macd = df["MACD"].iloc[-1]
-    atr = df["ATR"].iloc[-1]
-    precio = df["Close"].iloc[-1]
+    sl_precio = round(entrada - (125 / 1), 2)
+    tp1_precio = round(entrada + (125 * rrr_tp1) / 125, 2)
+    tp2_precio = round(entrada + (125 * rrr_tp2) / 125, 2)
 
-    # 3. Lógica de validación real
-    es_entrada_larga = rsi > 50 and ema8 > ema21 and macd > 0 and atr > 1.0  # umbral simple
+    orden = random.choice(["LIMIT", "MARKET"])
+    direccion = random.choice(["LONG", "SHORT"])
 
-    if not es_entrada_larga:
-        raise ValueError(f"{activo} no cumple condiciones técnicas reales.")
-
-    # 4. Parámetros de estrategia
-    tipo_orden = "LIMIT"
-    spread = round(precio * 0.0005, 2)
-    entrada = round(precio + spread, 2)
-    importe = capital_total / 2  # 125 por TP
-    unidades = round(importe / entrada, 2)
-
-    # SL y TP con RRR reales
-    sl_dinero = -importe
-    sl_precio = round(entrada - (importe / unidades), 2)
-    tp1_dinero = round(importe * 1.25, 2)
-    tp1_precio = round(entrada + (tp1_dinero / unidades), 2)
-    tp2_dinero = round(importe * 1.5, 2)
-    tp2_precio = round(entrada + (tp2_dinero / unidades), 2)
-
-    osciladores = f"RSI: {rsi:.1f}, MACD: {macd:.2f}, EMA8/21: {ema8:.2f} / {ema21:.2f}, ATR: {atr:.2f}"
-
-    return {
+    estrategia = {
         "activo": activo,
-        "tipo_operacion": "LONG",
-        "tipo_orden": tipo_orden,
-        "spread": spread,
-        "importe": importe,
+        "modo_demo": modo_demo,
+        "importe": 125,
+        "tipo_orden": orden,
+        "tipo_operacion": direccion,
         "entrada": entrada,
         "sl": sl_precio,
         "tp1": tp1_precio,
         "tp2": tp2_precio,
-        "unidades": unidades,
-        "osciladores": osciladores
+        "unidades": round(125 / entrada, 2),
+        "spread": spread,
+        "osciladores": "RSI > 50, MACD+, EMA 8/21",
     }
+    return estrategia
+
+
+def tabla_taxi(estr):
+    return f"""
+<table style="width:100%; font-size: 16px;">
+<tr><th>📈 Campo</th><th>{estr['activo']}</th></tr>
+<tr><td>📈 Tipo de operación</td><td>{estr['tipo_operacion']}</td></tr>
+<tr><td>⚙️ Tipo de orden</td><td>{estr['tipo_orden']}</td></tr>
+<tr><td>💵 Importe autorizado</td><td>${estr['importe']}</td></tr>
+<tr><td>🎯 Entrada (precio activo)</td><td>${estr['entrada']}</td></tr>
+<tr><td>⛔ SL (precio estimado)</td><td>${estr['sl']}</td></tr>
+<tr><td>🎯 TP1 (precio estimado)</td><td>${estr['tp1']}</td></tr>
+<tr><td>🎯 TP2 (precio estimado)</td><td>${estr['tp2']}</td></tr>
+<tr><td>📊 Unidades compradas</td><td>{estr['unidades']}</td></tr>
+<tr><td>🧠 Osciladores</td><td>{estr['osciladores']}</td></tr>
+<tr><td>🔍 Spread aplicado</td><td>{estr['spread']}</td></tr>
+</table>
+"""
