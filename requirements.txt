@@ -8,3 +8,6 @@ pandas-ta
 requests
 holidays
 openai
+yfinance
+ta
+pandas
