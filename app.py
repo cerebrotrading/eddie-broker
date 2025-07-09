@@ -1,46 +1,30 @@
 import streamlit as st
-from utils.horario import es_dia_operativo, obtener_hora_colombia
-from utils.activos import selector_activo
-from utils.estrategia import generar_estrategia_taxi, tabla_taxi
+import streamlit.components.v1 as components
 
-# Configuracion de la app
-st.set_page_config(layout="wide")
-st.title("🤖 Eddie Broker – Estrategia TAXI")
+# 🔁 Función para mapear activo al símbolo de TradingView
+def obtener_simbolo_tradingview(activo):
+    nyse = ["BA", "XOM", "DIS", "CRM", "BABA", "KO", "EC"]  # Puedes ampliar esta lista si hay más
+    if activo in nyse:
+        return f"NYSE:{activo}"
+    else:
+        return f"NASDAQ:{activo}"
 
-# Mostrar hora actual en Colombia
-hora_col = obtener_hora_colombia().strftime("%H:%M:%S")
-st.markdown(f"🕒 Hora Colombia actual: **{hora_col}**")
+# 📊 Función para mostrar el gráfico del activo seleccionado
+def mostrar_grafico_tradingview(activo):
+    symbol = obtener_simbolo_tradingview(activo)
+    
+    # 🔍 HTML embebido del widget de TradingView
+    iframe = f"""
+    <iframe 
+        src="https://s.tradingview.com/widgetembed/?symbol={symbol}&interval=15&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&theme=Dark&style=1&timezone=Etc/UTC&withdateranges=1&hideideas=1&studies_overrides={{}}"
+        width="100%" height="400" frameborder="0" allowtransparency="true" scrolling="no">
+    </iframe>
+    """
 
-# Validar si es dia operativo
-if es_dia_operativo():
-    st.success("📈 Hoy es un día operativo (COL + NYSE).")
-else:
-    st.warning("🧪 Hoy no es un día operativo. Eddie está en modo simulación.")
+    # 📍 Insertar en la app
+    components.html(iframe, height=400)
 
-# Selección de dos activos
-st.markdown("### 🌟 Selección de Activos")
-col1, col2 = st.columns(2)
-
-with col1:
-    activo1 = selector_activo("activo_1")
-with col2:
-    activo2 = selector_activo("activo_2")
-
-# Mostrar estrategia para ambos activos
-def render_taxi_para_activo(nombre_activo, numero):
-    st.subheader(f"🚕 TAXI oficial (Demo) para {nombre_activo}")
-    estrategia = generar_estrategia_taxi(nombre_activo)
-    tabla = tabla_taxi(estrategia)
-    st.markdown(tabla, unsafe_allow_html=True)
-
-st.divider()
-st.markdown("### 💎 Estrategia TAXI Generada")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    render_taxi_para_activo(activo1, 1)
-
-with col2:
-    render_taxi_para_activo(activo2, 2)
+# 🧪 Ejemplo de uso:
+# activo = "BA"  # Puedes reemplazar esto con tu selector
+# mostrar_grafico_tradingview(activo)
 
