@@ -7,6 +7,6 @@ lista_activos = [
     "KO", "EC", "BABA", "PYPL"
 ]
 
-# Función opcional si prefieres usar una llamada
+# Función opcional
 def obtener_lista_activos():
     return lista_activos
