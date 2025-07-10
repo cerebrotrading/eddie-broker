@@ -1,64 +1,53 @@
 import streamlit as st
-import datetime
-from utils.activos import obtener_lista_activos
-from utils.horario import es_dia_operativo, obtener_hora_colombia, dentro_ventana_taxi
 from utils.estrategia import generar_estrategia_taxi, tabla_taxi
-from utils.noticias import obtener_noticias, generar_resumen_noticias
-from utils.indicadores import obtener_datos_activo
-from utils.taxi import selector_activo, mostrar_grafico_tradingview
+from utils.activos import lista_activos
+from utils.indicadores import obtener_datos_tecnicos
+from utils.horario import es_horario_operativo
 
-st.set_page_config(page_title="🧠 Eddie Paper Broker", layout="wide")
+st.set_page_config(page_title="Eddie Broker - TAXI", layout="wide")
+
 st.title("🤖 Eddie Broker – Estrategia TAXI")
 
-# Mostrar hora y validación operativa
-hora_col = obtener_hora_colombia()
-es_operativo = es_dia_operativo()
-es_ventana_taxi = dentro_ventana_taxi()
+# Hora actual y validación operativa
+from datetime import datetime
+import pytz
+hora_colombia = datetime.now(pytz.timezone("America/Bogota")).strftime("%H:%M:%S")
+st.markdown(f"🕒 **Hora Colombia actual:** `{hora_colombia}`")
 
-st.markdown(f"🕒 Hora Colombia actual: **{hora_col.strftime('%H:%M:%S')}**")
-if es_operativo:
+if es_horario_operativo():
     st.success("📈 Hoy es un día operativo (COL + NYSE).")
 else:
-    st.error("⛔ Hoy NO es un día operativo (festivo COL o NYSE)")
+    st.warning("⛔ Hoy no es un día operativo.")
 
-st.subheader("🎯 Selección de Activos")
-col1, col2 = st.columns(2)
-
-with col1:
-    activo1 = selector_activo("activo_1")
-with col2:
-    activo2 = selector_activo("activo_2")
-
+# Selección de activos
 col1, col2 = st.columns(2)
 with col1:
-    mostrar_grafico_tradingview(activo1)
+    activo1 = st.selectbox("🎯 Selecciona activo 1:", lista_activos(), key="activo1")
 with col2:
-    mostrar_grafico_tradingview(activo2)
+    activo2 = st.selectbox("🎯 Selecciona activo 2:", lista_activos(), key="activo2")
 
-st.subheader("🗞️ Noticias Relevantes")
+# Mostrar estrategia TAXI para cada activo
+st.subheader("🚕 Estrategia TAXI (automática)")
 col1, col2 = st.columns(2)
-with col1:
-    noticias1 = obtener_noticias(activo1)
-    for n in noticias1:
-        st.markdown(f"**🗞️ {n['headline']}**\n{n['summary'][:150]}...")
-with col2:
-    noticias2 = obtener_noticias(activo2)
-    for n in noticias2:
-        st.markdown(f"**🗞️ {n['headline']}**\n{n['summary'][:150]}...")
 
-# --- BLOQUE ESTRATEGIA ---
-st.subheader("🚕 Estrategia TAXI")
+for col, activo in zip([col1, col2], [activo1, activo2]):
+    with col:
+        st.markdown(f"### 🚕 TAXI (Demo) para {activo}")
 
-col1, col2 = st.columns(2)
-for idx, activo in enumerate([activo1, activo2]):
-    with [col1, col2][idx]:
-        if es_ventana_taxi:
-            estrategia = generar_estrategia_taxi(activo)
-            st.markdown(tabla_taxi(estrategia), unsafe_allow_html=True)
-        else:
-            st.warning(f"⏰ Fuera de horario TAXI para {activo}")
-            if st.button(f"🚕 Iniciar simulación para {activo}", key=f"sim_{idx}"):
-                estrategia = generar_estrategia_taxi(activo)
-                st.markdown(tabla_taxi(estrategia), unsafe_allow_html=True)
-                st.button(f"🛑 Detener simulación {activo}", key=f"stop_{idx}")
+        datos = obtener_datos_tecnicos(activo)  # RSI, MACD, ATR, Precio, Spread, etc.
+
+        # Simulamos tipo de orden automático (puede ser 'LIMIT' o 'MARKET')
+        tipo_orden = "LIMIT" if datos['rsi'] > 50 else "MARKET"
+        direccion = "LONG" if datos['rsi'] > 50 else "SHORT"
+
+        estrategia = generar_estrategia_taxi(
+            activo=activo,
+            direccion=direccion,
+            order_type=tipo_orden,
+            precio=datos['precio'],
+            spread=datos['spread'],
+            capital_total=250
+        )
+
+        st.markdown(tabla_taxi(estrategia), unsafe_allow_html=True)
 
