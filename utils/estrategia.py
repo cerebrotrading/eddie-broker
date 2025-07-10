@@ -1,84 +1,56 @@
+# utils/estrategia.py
 import random
 
-# Simulación simple de osciladores (esto será reemplazado por datos reales luego)
-def evaluar_osciladores(activo):
-    return {
-        "rsi": "RSI > 50",
-        "macd": "MACD+",
-        "ema": "EMA 8/21",
-        "volumen": "Volumen creciente",
-        "atr": "ATR suficiente",
-    }
+def calcular_tp_sl(precio_entrada, direccion, spread=0.1):
+    importe = 125  # USD fijos por TP
+    perdida_maxima = 12.5  # 10% de 125
 
-def generar_estrategia_taxi(activo):
-    # 🔢 Parámetros base
-    precio_actual = obtener_precio_real_simulado(activo)
-    importe_total = 250
-    importe_tp = 125
-    max_perdida_usd = 12.5  # SL monetario
-    tipo_orden = random.choice(["LIMIT", "MARKET"])
-    spread = round(random.uniform(0.05, 0.20), 2)
+    if direccion == "LONG":
+        sl = precio_entrada - (perdida_maxima / (importe / precio_entrada))
+        tp1 = precio_entrada + (20 / (importe / precio_entrada))
+        tp2 = precio_entrada + (30 / (importe / precio_entrada))
+    else:
+        sl = precio_entrada + (perdida_maxima / (importe / precio_entrada))
+        tp1 = precio_entrada - (20 / (importe / precio_entrada))
+        tp2 = precio_entrada - (30 / (importe / precio_entrada))
 
-    # 🧮 Precio de entrada
-    entrada = precio_actual + spread if tipo_orden == "LIMIT" else precio_actual
+    unidades = round(importe / precio_entrada, 2)
+    return round(sl, 2), round(tp1, 2), round(tp2, 2), unidades
 
-    # 📉 SL (en precio): pérdida de $12.5
-    unidades = round(importe_tp / entrada, 2)
-    sl_dinero = importe_tp - max_perdida_usd
-    sl_precio = round(sl_dinero / unidades, 2)
+def generar_estrategia_taxi(activo, precio_actual, direccion, tipo_orden, spread):
+    precio_entrada = precio_actual + spread if tipo_orden == "LIMIT" else precio_actual
+    sl, tp1, tp2, unidades = calcular_tp_sl(precio_entrada, direccion, spread)
 
-    # 🎯 TP1 y TP2: definidos por RRR (ejemplo 1.2x y 1.6x)
-    tp1_dinero = importe_tp + round(max_perdida_usd * 1.2, 2)
-    tp2_dinero = importe_tp + round(max_perdida_usd * 1.6, 2)
-    tp1_precio = round(tp1_dinero / unidades, 2)
-    tp2_precio = round(tp2_dinero / unidades, 2)
-
-    # 📊 Osciladores técnicos (mock)
-    osciladores = evaluar_osciladores(activo)
-
-    return {
+    osciladores = "RSI > 50, MACD+, EMA 8/21"
+    estrategia = {
         "activo": activo,
-        "tipo_operacion": "LONG",  # Por ahora fijo
+        "direccion": direccion,
         "tipo_orden": tipo_orden,
-        "importe": importe_tp,
-        "entrada": round(entrada, 2),
-        "sl_precio": sl_precio,
-        "tp1_precio": tp1_precio,
-        "tp2_precio": tp2_precio,
+        "importe": 125,
+        "entrada": round(precio_entrada, 2),
+        "sl": sl,
+        "tp1": tp1,
+        "tp2": tp2,
         "unidades": unidades,
-        "osciladores": ", ".join(osciladores.values()),
-        "spread": spread
+        "osciladores": osciladores,
+        "spread": spread,
     }
+    return estrategia
 
 def tabla_taxi(estr):
     return f"""
-🚕 TAXI (Demo) para {estr['activo']}
-| 📈 Campo                | {estr['activo']} |
-|------------------------|------------------|
-| 📈 Tipo de operación    | {estr['tipo_operacion']} |
-| ⚙️ Tipo de orden        | {estr['tipo_orden']} |
-| 💵 Importe autorizado   | ${estr['importe']} |
-| 🎯 Entrada (precio)     | ${estr['entrada']} |
-| ⛔ SL (precio estimado) | ${estr['sl_precio']} |
-| 🎯 TP1 (precio estimado)| ${estr['tp1_precio']} |
-| 🎯 TP2 (precio estimado)| ${estr['tp2_precio']} |
-| 📊 Unidades compradas   | {estr['unidades']} |
-| 🧠 Osciladores          | {estr['osciladores']} |
-| 🔍 Spread aplicado      | {estr['spread']} |
-"""
+    <div style='border:1px solid #444;padding:10px;border-radius:8px;'>
+    <h4>🚕 TAXI (Demo) para {estr['activo']}</h4>
+    <b>📈 Tipo de operación:</b> {estr['direccion']}<br>
+    <b>⚙️ Tipo de orden:</b> {estr['tipo_orden']}<br>
+    <b>💵 Importe autorizado:</b> ${estr['importe']}<br>
+    <b>🎯 Entrada (precio activo):</b> ${estr['entrada']}<br>
+    <b>⛔ SL (precio estimado):</b> ${estr['sl']}<br>
+    <b>🎯 TP1 (precio estimado):</b> ${estr['tp1']}<br>
+    <b>🎯 TP2 (precio estimado):</b> ${estr['tp2']}<br>
+    <b>📊 Unidades compradas:</b> {estr['unidades']}<br>
+    <b>🧠 Osciladores:</b> {estr['osciladores']}<br>
+    <b>🔍 Spread aplicado:</b> {estr['spread']}<br>
+    </div>
+    """
 
-def obtener_precio_real_simulado(activo):
-    precios = {
-        "TSLA": 298.00,
-        "META": 320.10,
-        "NVDA": 124.50,
-        "AMD": 136.80,
-        "AAPL": 195.40,
-        "BA": 203.50,
-        "MSFT": 445.20,
-        "KO": 61.25,
-        "EC": 11.50,
-        "CRM": 220.90,
-        "PYPL": 70.60
-    }
-    return precios.get(activo.upper(), round(random.uniform(100, 400), 2))
